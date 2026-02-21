@@ -1,0 +1,248 @@
+name: Triage Report to Slack
+
+on:
+  schedule:
+    # Run every day at 9 AM UTC (adjust as needed)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  report-triage-items:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get items needing triage
+        id: get-items
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECTS_PAT }}
+          script: |
+            const projectNumber = 75;
+            const org = 'podaac';
+            const statusFilter = 'needs:triage';
+
+            // First, get the project and status field info
+            const projectInfoQuery = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    title
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectInfo = await github.graphql(projectInfoQuery, {
+              org: org,
+              number: projectNumber
+            });
+
+            const statusField = projectInfo.organization.projectV2.fields.nodes.find(
+              field => field.name === 'Status'
+            );
+            const statusFieldId = statusField?.id;
+
+            // Optimized query - only fetch essential fields
+            const itemsQuery = `
+              query($org: String!, $number: Int!, $cursor: String) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    items(first: 100, after: $cursor) {
+                      pageInfo {
+                        hasNextPage
+                        endCursor
+                      }
+                      nodes {
+                        id
+                        fieldValueByName(name: "Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                          }
+                        }
+                        content {
+                          ... on Issue {
+                            number
+                            title
+                            url
+                            repository {
+                              name
+                              owner {
+                                login
+                              }
+                            }
+                            createdAt
+                            author {
+                              login
+                            }
+                          }
+                          ... on PullRequest {
+                            number
+                            title
+                            url
+                            repository {
+                              name
+                              owner {
+                                login
+                              }
+                            }
+                            createdAt
+                            author {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let triageItems = [];
+            let hasNextPage = true;
+            let cursor = null;
+
+            // Fetch items with pagination, filtering as we go
+            while (hasNextPage) {
+              const result = await github.graphql(itemsQuery, {
+                org: org,
+                number: projectNumber,
+                cursor: cursor
+              });
+
+              const items = result.organization.projectV2.items.nodes;
+
+              // Filter items by status immediately
+              const filteredBatch = items.filter(item => {
+                return item.fieldValueByName?.name === statusFilter && item.content;
+              });
+
+              triageItems = triageItems.concat(filteredBatch);
+
+              hasNextPage = result.organization.projectV2.items.pageInfo.hasNextPage;
+              cursor = result.organization.projectV2.items.pageInfo.endCursor;
+            }
+
+            // Format items for Slack
+            const formattedItems = triageItems.map(item => {
+              const content = item.content;
+              const type = content.__typename === 'Issue' ? 'Issue' : 'PR';
+              const repo = `${content.repository.owner.login}/${content.repository.name}`;
+              const createdAt = new Date(content.createdAt);
+              const date = createdAt.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              });
+
+              return {
+                type: type,
+                number: content.number,
+                title: content.title,
+                url: content.url,
+                repo: repo,
+                author: content.author?.login || 'unknown',
+                createdAt: createdAt,
+                displayDate: date
+              };
+            }).sort((a, b) => b.createdAt - a.createdAt); // Sort by date, newest first
+
+            // Create Slack message blocks
+            const blocks = [];
+
+            // Header
+            blocks.push({
+              type: "header",
+              text: {
+                type: "plain_text",
+                text: `🔍 Items Needing Triage: ${formattedItems.length}`,
+                emoji: true
+              }
+            });
+
+            blocks.push({
+              type: "context",
+              elements: [
+                {
+                  type: "mrkdwn",
+                  text: `<https://github.com/orgs/podaac/projects/${projectNumber}|View Project Board>`
+                }
+              ]
+            });
+
+            blocks.push({
+              type: "divider"
+            });
+
+            if (formattedItems.length === 0) {
+              blocks.push({
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: "✅ *No items need triage!* Great job keeping up with the backlog."
+                }
+              });
+            } else {
+              // Add each item
+              formattedItems.forEach(item => {
+                const emoji = item.type === 'Issue' ? '🐛' : '🔀';
+                blocks.push({
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `${emoji} *<${item.url}|${item.repo}#${item.number}>* ${item.title}\n` +
+                          `_Created by @${item.author} on ${item.displayDate}_`
+                  }
+                });
+              });
+
+              // Add summary footer
+              const issueCount = formattedItems.filter(i => i.type === 'Issue').length;
+              const prCount = formattedItems.filter(i => i.type === 'PR').length;
+
+              blocks.push({
+                type: "divider"
+              });
+
+              blocks.push({
+                type: "context",
+                elements: [
+                  {
+                    type: "mrkdwn",
+                    text: `📊 Summary: ${issueCount} issue${issueCount !== 1 ? 's' : ''} and ${prCount} PR${prCount !== 1 ? 's' : ''}`
+                  }
+                ]
+              });
+            }
+
+            // Set output for next step
+            core.setOutput('slack_message', JSON.stringify({ blocks: blocks }));
+            core.setOutput('item_count', formattedItems.length);
+
+            console.log(`Found ${formattedItems.length} items needing triage`);
+            return formattedItems.length;
+
+      #- name: Post to Slack
+      #  if: always() # Post even if there are 0 items
+      #  uses: slackapi/slack-github-action@v1.26.0
+      #  with:
+      #    payload: ${{ steps.get-items.outputs.slack_message }}
+      #  env:
+      #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Summary
+        run: |
+          echo "✅ Triage report sent to Slack"
+          echo "📊 Items needing triage: ${{ steps.get-items.outputs.item_count }}"

@@ -4,6 +4,15 @@
 
 This workflow automatically adds new issues and pull requests to the podaac organization project with a default status of "needs:triage".
 
+### Important Note About Cross-Repository Workflows
+
+⚠️ **GitHub Actions workflows cannot trigger across repositories.** This means:
+- The workflow file must exist in **each repository** where you want it to run
+- A workflow in the `.github` repository will NOT trigger for issues/PRs in other repositories
+- You must deploy this workflow to all repositories where you want automatic project assignment
+
+This repository provides automation scripts to help deploy the workflow across all your organization's repositories.
+
 ### Setup Instructions
 
 1. **Find your project number:**
@@ -40,8 +49,34 @@ This workflow automatically adds new issues and pull requests to the podaac orga
    - If the field or option has a different name, update the script accordingly
 
 5. **Deploy the workflow:**
-   - Copy the `.github` folder to each repository in your organization, OR
-   - Use this repository as a centralized workflow location if using organization-level workflows
+
+   **Option A: Automated deployment (Recommended)**
+
+   Use the provided scripts to deploy to all repositories:
+
+   ```bash
+   # Deploy via Pull Requests (safer, allows review)
+   ./deploy-workflow.sh
+
+   # OR deploy directly to main branch (faster, but no review)
+   ./deploy-workflow-direct.sh
+   ```
+
+   Prerequisites:
+   - GitHub CLI (`gh`) must be installed and authenticated
+   - You need write access to all repositories in the organization
+
+   **Option B: Manual deployment**
+
+   Copy the workflow file to each repository:
+   ```bash
+   cd /path/to/your/repo
+   mkdir -p .github/workflows
+   cp /path/to/this/repo/.github/workflows/add-to-project.yml .github/workflows/
+   git add .github/workflows/add-to-project.yml
+   git commit -m "Add automatic project assignment workflow"
+   git push
+   ```
 
 ### How it works
 
