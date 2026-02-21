@@ -201,7 +201,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*👋 Team Leads - Action Required*\n\nThe following items need triage. For each relevant ticket, please:\n\n1️⃣ Open the ticket \n2️⃣ In the *podaac* project assign the appropriate *Team* field\n3️⃣ Update the *Status* field from `needs:triage` to `triaged`"
+                  text: "*👋 Team Leads - Action Required*\n\nThe following items need triage. Click on each relevant ticket below and:\n\n1️⃣ Assign the appropriate *Team* field in the podaac project\n2️⃣ Update the *Status* field from `needs:triage` to `triaged`\n\n<https://github.com/orgs/podaac/projects/75/views/4|View all tickets on project board>"
                 }
               });
 
