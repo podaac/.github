@@ -167,7 +167,7 @@ jobs:
               type: "header",
               text: {
                 type: "plain_text",
-                text: `🔍 [TEST IGNORE FOR NOW] New GitHub Tickets Needing Triage: ${formattedItems.length}`,
+                text: `🔍 New GitHub Tickets Needing Triage: ${formattedItems.length}`,
                 emoji: true
               }
             });
