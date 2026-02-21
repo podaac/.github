@@ -249,11 +249,10 @@ jobs:
 
       - name: Post to Slack
         if: always()  # Send always a message, to aknowledge properly routed tickets
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          payload-file-path: slack-payload.json
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d @slack-payload.json
 
       - name: Summary
         run: |
