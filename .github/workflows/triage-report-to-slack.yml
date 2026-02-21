@@ -238,7 +238,10 @@ jobs:
             }
 
             // Set output for next step
-            core.setOutput('slack_message', JSON.stringify({ blocks: blocks }));
+            const fs = require('fs');
+            const payload = { blocks: blocks };
+            fs.writeFileSync('slack-payload.json', JSON.stringify(payload, null, 2));
+
             core.setOutput('item_count', formattedItems.length);
 
             console.log(`Found ${formattedItems.length} items needing triage`);
@@ -248,7 +251,7 @@ jobs:
         if: always()  # Send always a message, to aknowledge properly routed tickets
         uses: slackapi/slack-github-action@v1.26.0
         with:
-          payload: ${{ steps.get-items.outputs.slack_message }}
+          payload-file-path: slack-payload.json
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
