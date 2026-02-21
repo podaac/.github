@@ -201,7 +201,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: "*👋 Team Leads - Action Required*\n\nThe following items need triage. For each relevant ticket, please:\n\n1️⃣ Open the ticket \n2️⃣In the *podaac* project assign the appropriate *Team* field\n3️⃣ Update the *Status* field from `needs:triage` to `triaged`"
+                  text: "*👋 Team Leads - Action Required*\n\nThe following items need triage. For each relevant ticket, please:\n\n1️⃣ Open the ticket \n2️⃣ In the *podaac* project assign the appropriate *Team* field\n3️⃣ Update the *Status* field from `needs:triage` to `triaged`"
                 }
               });
 
