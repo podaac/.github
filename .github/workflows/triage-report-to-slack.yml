@@ -9,7 +9,6 @@ on:
 jobs:
   report-triage-items:
     runs-on: ubuntu-latest
-    environment: podaac projects
     steps:
       - name: Get items needing triage
         id: get-items
@@ -168,7 +167,7 @@ jobs:
               type: "header",
               text: {
                 type: "plain_text",
-                text: `🔍 Items Needing Triage: ${formattedItems.length}`,
+                text: `🔍 [TEST IGNORE FOR NOW] New GitHub Tickets Needing Triage: ${formattedItems.length}`,
                 emoji: true
               }
             });
@@ -196,6 +195,16 @@ jobs:
                 }
               });
             } else {
+            
+              blocks.push({
+                type: "context",
+                elements: [
+                  {
+                    type: "mrkdwn",
+                    text: `Team leads, we don't want new github issues to fall into the cracks, please assign your team if relevant.`
+                  }
+                ]
+              });
               // Add each item
               formattedItems.forEach(item => {
                 const emoji = item.type === 'Issue' ? '🐛' : '🔀';
@@ -235,13 +244,13 @@ jobs:
             console.log(`Found ${formattedItems.length} items needing triage`);
             return formattedItems.length;
 
-      #- name: Post to Slack
-      #  if: always() # Post even if there are 0 items
-      #  uses: slackapi/slack-github-action@v1.26.0
-      #  with:
-      #    payload: ${{ steps.get-items.outputs.slack_message }}
-      #  env:
-      #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Post to Slack
+        if: always()  # Send always a message, to aknowledge properly routed tickets
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: ${{ steps.get-items.outputs.slack_message }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Summary
         run: |
