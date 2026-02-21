@@ -195,16 +195,20 @@ jobs:
                 }
               });
             } else {
-            
+
+              // Instructions section for team leads
               blocks.push({
-                type: "context",
-                elements: [
-                  {
-                    type: "mrkdwn",
-                    text: `Team leads, we don't want new github issues to fall into the cracks, please assign your team if relevant.`
-                  }
-                ]
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: "*👋 Team Leads - Action Required*\n\nThe following items need triage. For each relevant ticket, please:\n\n1️⃣ Open the ticket \n2️⃣In the *podaac* project assign the appropriate *Team* field\n3️⃣ Update the *Status* field from `needs:triage` to `triaged`"
+                }
               });
+
+              blocks.push({
+                type: "divider"
+              });
+
               // Add each item
               formattedItems.forEach(item => {
                 const emoji = item.type === 'Issue' ? '🐛' : '🔀';
