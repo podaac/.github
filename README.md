@@ -1,5 +1,8 @@
 # GitHub Organization Workflows
 
+This project contains GitHub Actions workflows designed to automate project management tasks for the podaac organization. These workflows can be deployed across all repositories in the organization to ensure consistent handling of issues and pull requests.
+
+
 ## Add to Project Workflow
 
 This workflow automatically adds new issues and pull requests to the podaac organization project with a default status of "needs:triage".
@@ -100,3 +103,10 @@ const triageOption = statusField?.options.find(option => option.name === 'needs:
 ```
 
 Replace `'needs:triage'` with your desired status option name.
+
+## Triage new tickets
+
+All the new tickets are now automatically added to the podaac github project with a default status of "needs:triage". This allows the team to easily find and triage new issues and pull requests in one central location.
+
+The action triage-report-to-slack sends a message to the #podaac-management channel in Slack whenever a new issue or pull request is created with the "needs:triage" status. This ensures that the team is immediately notified of new items that require attention and that no issue falls into cracks.
+
