@@ -9,6 +9,7 @@ on:
 jobs:
   report-triage-items:
     runs-on: ubuntu-latest
+    environment: podaac projects
     steps:
       - name: Get items needing triage
         id: get-items
