@@ -193,12 +193,6 @@ jobs:
                         project {
                           id
                         }
-                        fieldValueByName(name: "Status") {
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            optionId
-                          }
-                        }
                       }
                     }
                   }
@@ -250,34 +244,34 @@ jobs:
             }
 
             // ========================================
-            // Step 3: Set status to "New" in team project (only if no status exists)
+            // Step 3: Set status to "New" in team project (only if newly added)
             // ========================================
 
-            console.log('Step 3: Checking if status needs to be set in team project...');
-
-            const teamStatusField = teamProject.fields.nodes.find(field => field.name === 'Status');
-            const newStatusOption = teamStatusField?.options.find(option => option.name === '🆕 New');
-
-            // Check if issue already has a status in team project
-            const currentStatus = existingTeamProjectItem?.fieldValueByName?.name;
             let statusWasUpdated = false;
 
-            if (!teamStatusField || !newStatusOption) {
-              core.warning(`Could not find "Status" field or "🆕 New" option in team project "${teamName}"`);
-              console.log(`⚠️  Team project "${teamName}" does not have a Status field with "🆕 New" option`);
-            } else if (currentStatus) {
-              console.log(`⏭️  Issue already has status "${currentStatus}" in team project, skipping update`);
+            if (wasAlreadyInProject) {
+              console.log('⏭️  Issue was already in team project, preserving existing status');
             } else {
-              // No status set, so set it to "New"
-              await github.graphql(updateStatusMutation, {
-                projectId: teamProject.id,
-                itemId: teamProjectItemId,
-                fieldId: teamStatusField.id,
-                value: newStatusOption.id
-              });
+              console.log('Step 3: Setting status to "🆕 New" for newly added issue...');
 
-              statusWasUpdated = true;
-              console.log('✅ Successfully set status to "🆕 New" in team project');
+              const teamStatusField = teamProject.fields.nodes.find(field => field.name === 'Status');
+              const newStatusOption = teamStatusField?.options.find(option => option.name === '🆕 New');
+
+              if (!teamStatusField || !newStatusOption) {
+                core.warning(`Could not find "Status" field or "🆕 New" option in team project "${teamName}"`);
+                console.log(`⚠️  Team project "${teamName}" does not have a Status field with "🆕 New" option`);
+              } else {
+                // Set status to "New" for newly added issue
+                await github.graphql(updateStatusMutation, {
+                  projectId: teamProject.id,
+                  itemId: teamProjectItemId,
+                  fieldId: teamStatusField.id,
+                  value: newStatusOption.id
+                });
+
+                statusWasUpdated = true;
+                console.log('✅ Successfully set status to "🆕 New" in team project');
+              }
             }
 
             // Summary
@@ -288,15 +282,12 @@ jobs:
             }
 
             if (wasAlreadyInProject) {
-              summaryItems.push(`Issue was already in team project "${teamName}"`);
+              summaryItems.push(`Issue was already in team project "${teamName}" (status preserved)`);
             } else {
               summaryItems.push(`Added issue to team project "${teamName}"`);
-            }
-
-            if (currentStatus) {
-              summaryItems.push(`Preserved existing status "${currentStatus}" in team project`);
-            } else if (statusWasUpdated) {
-              summaryItems.push(`Set status to "🆕 New" in team project`);
+              if (statusWasUpdated) {
+                summaryItems.push(`Set status to "🆕 New" in team project`);
+              }
             }
 
             core.summary
