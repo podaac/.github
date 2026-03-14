@@ -138,21 +138,20 @@ This workflow automates the process of assigning issues to specific teams when t
    - Ensure the PAT has the required permissions (see "Add to Project Workflow" section above)
 
 2. **Configure your team projects:**
-   - Create organization projects named after your teams (e.g., "tva", "forge", "hydrocron")
+   - Create organization projects named after your teams (e.g., "tva", "pse", ...)
    - Ensure each team project has a "Status" field with a "New" option
    - The project name match is case-insensitive
 
 3. **Create team labels:**
    - Create labels in your repositories following the pattern: `team:<team_name>`
-   - Examples: `team:tva`, `team:forge`, `team:hydrocron`
+   - Examples: `team:tva`, `team:pse`, `team:pde`, etc...
    - These can be created at the organization level or per-repository
 
 4. **Deploy the workflow:**
-   - Use the same deployment scripts as the other workflows:
-     ```bash
-     ./deploy-workflow.sh
-     # OR
-     ./deploy-workflow-direct.sh
+
+    ```
+    chmod +x deploy-team-assignment-direct.sh
+    ./deploy-team-assignment-direct.sh
      ```
 
 ### Usage
