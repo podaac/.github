@@ -227,11 +227,11 @@ jobs:
             console.log('Step 3: Setting status to "New" in team project...');
 
             const teamStatusField = teamProject.fields.nodes.find(field => field.name === 'Status');
-            const newStatusOption = teamStatusField?.options.find(option => option.name === 'New');
+            const newStatusOption = teamStatusField?.options.find(option => option.name === '🆕 New');
 
             if (!teamStatusField || !newStatusOption) {
               core.warning(`Could not find "Status" field or "New" option in team project "${teamName}"`);
-              console.log(`⚠️  Team project "${teamName}" does not have a Status field with "New" option`);
+              console.log(`⚠️  Team project "${teamName}" does not have a Status field with "🆕 New" option`);
             } else {
               await github.graphql(updateStatusMutation, {
                 projectId: teamProject.id,
@@ -240,7 +240,7 @@ jobs:
                 value: newStatusOption.id
               });
 
-              console.log('✅ Successfully set status to "New" in team project');
+              console.log('✅ Successfully set status to "🆕 New" in team project');
             }
 
             // Summary
@@ -249,6 +249,6 @@ jobs:
               .addList([
                 `Updated podaac project status to "triaged"`,
                 `Added issue to team project "${teamName}"`,
-                `Set status to "New" in team project`
+                `Set status to "🆕 New" in team project`
               ])
               .write();
