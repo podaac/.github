@@ -30,6 +30,24 @@ jobs:
             const org = 'podaac';
             const repo = context.repo.repo;
 
+            // Define reusable GraphQL mutation for updating project status
+            const updateStatusMutation = `
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $value }
+                  }
+                ) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
             // ========================================
             // Step 1: Update status to "triaged" in podaac project
             // ========================================
@@ -103,23 +121,6 @@ jobs:
                 core.warning('Issue is not in podaac project, cannot update status');
               } else {
                 // Update the status to "triaged"
-                const updateStatusMutation = `
-                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
-                    updateProjectV2ItemFieldValue(
-                      input: {
-                        projectId: $projectId
-                        itemId: $itemId
-                        fieldId: $fieldId
-                        value: { singleSelectOptionId: $value }
-                      }
-                    ) {
-                      projectV2Item {
-                        id
-                      }
-                    }
-                  }
-                `;
-
                 await github.graphql(updateStatusMutation, {
                   projectId: podaacProject.id,
                   itemId: podaacProjectItem.id,
