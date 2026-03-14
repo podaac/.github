@@ -127,8 +127,8 @@ This workflow automates the process of assigning issues to specific teams when t
   1. Updates the status in the podaac project (project #75) to "triaged"
   2. Searches for an organization project named exactly as the team name (e.g., a project named "tva" for the label "team:tva")
   3. If the team project exists:
-     - Adds the issue to the team project
-     - Sets the status to "New" in the team project
+     - Adds the issue to the team project (if not already there)
+     - Status is managed by the team project's automation workflows
   4. If no matching team project is found, logs a notice and completes gracefully
 
 ### Setup Instructions
@@ -139,7 +139,7 @@ This workflow automates the process of assigning issues to specific teams when t
 
 2. **Configure your team projects:**
    - Create organization projects named after your teams (e.g., "tva", "pse", ...)
-   - Ensure each team project has a "Status" field with a "New" option
+   - Configure project automation workflows in each team project to handle status assignments
    - The project name match is case-insensitive
 
 3. **Create team labels:**
@@ -161,13 +161,12 @@ This workflow automates the process of assigning issues to specific teams when t
 3. The workflow automatically:
    - Changes the status in podaac project from "needs:triage" to "triaged"
    - Adds the issue to the team's project (if it exists)
-   - Sets the status to "New" in the team project
+   - The team project's automation workflows handle status assignment
 
 ### Troubleshooting
 
 - **Status not updating to "triaged":** Verify the issue is in the podaac project and has a "triaged" status option
 - **Issue not added to team project:** Check that a project exists with the exact team name (case-insensitive)
-- **Status not set to "New" in team project:** Verify the team project has a "Status" field with a "New" option
 - **Workflow not triggering:** Ensure the label matches the pattern `team:<team_name>` exactly
 
 ### Example Flow
@@ -178,4 +177,4 @@ This workflow automates the process of assigning issues to specific teams when t
    - ✅ Updates status to "triaged" in podaac project
    - ✅ Finds project named "tva"
    - ✅ Adds issue #123 to "tva" project
-   - ✅ Sets status to "New" in "tva" project
+   - ✅ Team project automation handles status assignment
