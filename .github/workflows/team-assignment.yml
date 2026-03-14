@@ -86,6 +86,9 @@ jobs:
             const podaacStatusField = podaacProject.fields.nodes.find(field => field.name === 'Status');
             const triagedOption = podaacStatusField?.options.find(option => option.name === 'triaged');
 
+            let podaacProjectItem = null;
+            let podaacStatusUpdated = false;
+
             if (!triagedOption) {
               core.warning('Could not find "triaged" status option in podaac project');
             } else {
@@ -115,7 +118,7 @@ jobs:
               });
 
               const projectItems = issueData.repository.issue.projectItems.nodes;
-              const podaacProjectItem = projectItems.find(item => item.project.id === podaacProject.id);
+              podaacProjectItem = projectItems.find(item => item.project.id === podaacProject.id);
 
               if (!podaacProjectItem) {
                 core.warning('Issue is not in podaac project, cannot update status');
@@ -128,6 +131,7 @@ jobs:
                   value: triagedOption.id
                 });
 
+                podaacStatusUpdated = true;
                 console.log('✅ Successfully updated status to "triaged" in podaac project');
               }
             }
@@ -246,7 +250,7 @@ jobs:
             // Summary
             const summaryItems = [`Processed team label: ${teamName}`];
 
-            if (triagedOption && podaacProjectItem) {
+            if (podaacStatusUpdated) {
               summaryItems.push(`Updated podaac project status to "triaged"`);
             }
 
