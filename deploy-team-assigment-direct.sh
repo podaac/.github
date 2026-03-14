@@ -46,37 +46,54 @@ fi
 
 # Counter for tracking
 SUCCESS_COUNT=0
-SKIP_COUNT=0
+UPDATE_COUNT=0
 FAIL_COUNT=0
 
 # Process each repository
 while IFS= read -r REPO; do
     echo -e "${YELLOW}Processing: $ORG/$REPO${NC}"
 
-    # Check if workflow already exists
-    if gh api "repos/$ORG/$REPO/contents/.github/workflows/team-assignment.yml" &>/dev/null; then
-        echo -e "  ⏭️  Workflow already exists, skipping..."
-        ((SKIP_COUNT++))
-        echo ""
-        continue
-    fi
-
-    # Try to add the file directly via GitHub API
     # Get base64 encoded content
     CONTENT_BASE64=$(base64 -i "$WORKFLOW_FILE")
 
-    # Create the file via API
-    if gh api \
-        --method PUT \
-        -H "Accept: application/vnd.github+json" \
-        "/repos/$ORG/$REPO/contents/.github/workflows/team-assignment.yml" \
-        -f "message=$COMMIT_MESSAGE" \
-        -f "content=$CONTENT_BASE64" &>/dev/null; then
-        echo -e "  ${GREEN}✅ Workflow added successfully${NC}"
-        ((SUCCESS_COUNT++))
+    # Check if workflow already exists and get its SHA
+    EXISTING_FILE=$(gh api "repos/$ORG/$REPO/contents/.github/workflows/team-assignment.yml" 2>/dev/null || echo "")
+
+    if [ -n "$EXISTING_FILE" ]; then
+        # Workflow exists, get its SHA for updating
+        FILE_SHA=$(echo "$EXISTING_FILE" | jq -r '.sha')
+        echo -e "  🔄 Workflow exists, updating..."
+
+        # Update the file via API
+        if gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$ORG/$REPO/contents/.github/workflows/team-assignment.yml" \
+            -f "message=$COMMIT_MESSAGE" \
+            -f "content=$CONTENT_BASE64" \
+            -f "sha=$FILE_SHA" &>/dev/null; then
+            echo -e "  ${GREEN}✅ Workflow updated successfully${NC}"
+            ((UPDATE_COUNT++))
+        else
+            echo -e "  ${RED}❌ Failed to update workflow${NC}"
+            ((FAIL_COUNT++))
+        fi
     else
-        echo -e "  ${RED}❌ Failed to add workflow${NC}"
-        ((FAIL_COUNT++))
+        # Workflow doesn't exist, create it
+        echo -e "  ➕ Creating new workflow..."
+
+        if gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$ORG/$REPO/contents/.github/workflows/team-assignment.yml" \
+            -f "message=$COMMIT_MESSAGE" \
+            -f "content=$CONTENT_BASE64" &>/dev/null; then
+            echo -e "  ${GREEN}✅ Workflow added successfully${NC}"
+            ((SUCCESS_COUNT++))
+        else
+            echo -e "  ${RED}❌ Failed to add workflow${NC}"
+            ((FAIL_COUNT++))
+        fi
     fi
 
     echo ""
@@ -87,14 +104,15 @@ done <<< "$REPOS"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Deployment Summary:${NC}"
 echo -e "  ${GREEN}✅ Successfully added: $SUCCESS_COUNT repos${NC}"
-echo -e "  ${YELLOW}⏭️  Skipped (already exists): $SKIP_COUNT repos${NC}"
+echo -e "  ${GREEN}🔄 Successfully updated: $UPDATE_COUNT repos${NC}"
 echo -e "  ${RED}❌ Failed: $FAIL_COUNT repos${NC}"
 echo -e "${GREEN}========================================${NC}"
 
-if [ $SUCCESS_COUNT -gt 0 ]; then
+TOTAL_SUCCESS=$((SUCCESS_COUNT + UPDATE_COUNT))
+if [ $TOTAL_SUCCESS -gt 0 ]; then
     echo -e "\n${GREEN}Next steps:${NC}"
     echo "1. Verify the workflows are active in each repository"
     echo "2. Ensure the PROJECTS_PAT secret is configured at:"
     echo "   https://github.com/organizations/podaac/settings/secrets/actions"
-    echo "3. Test by creating a new issue in any repository"
+    echo "3. Test by applying a team label to an issue in any repository"
 fi
