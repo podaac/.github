@@ -243,8 +243,12 @@ jobs:
 
             // Set output for next step
             const fs = require('fs');
+            const path = require('path');
             const payload = { blocks: blocks };
-            fs.writeFileSync('slack-payload.json', JSON.stringify(payload, null, 2));
+            const workspacePath = process.env.GITHUB_WORKSPACE || '.';
+            const filePath = path.join(workspacePath, 'slack-payload.json');
+            fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+            console.log(`Wrote payload to ${filePath}`);
 
             core.setOutput('item_count', formattedItems.length);
 
@@ -256,7 +260,7 @@ jobs:
         run: |
           curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d @slack-payload.json
+            -d @${{ github.workspace }}/slack-payload.json
 
       - name: Summary
         run: |
