@@ -1,13 +1,21 @@
 # GitHub Organization Workflows
 
-This project contains GitHub Actions workflows designed to automate project management tasks for the podaac organization. These workflows can be deployed across all repositories in the organization to ensure consistent handling of issues and pull requests.
+This repository contains reusable GitHub Actions workflows designed to automate project management tasks for the podaac organization. These workflows can be deployed across all repositories in the organization to ensure consistent handling of issues and pull requests.
 
+## Workflow Naming Convention
 
-## Add to Project Workflow
+Workflows in this repository use the `org-` prefix to indicate they are designed for organization-wide deployment:
+- `org-add-to-project.yml` - Adds new issues/PRs to the project board
+- `org-team-assignment.yml` - Assigns issues to team projects
+- `org-close-pr-status.yml` - Updates status when PRs are closed
 
-This workflow automatically adds new issues and pull requests to the podaac organization project with a default status of "needs:triage".
+This naming helps distinguish between workflows meant for deployment vs. workflows that only run in this repository.
 
-When an issue or pull request is closed, the "closed" status is automatically assigned in the podaac project. It does not matter that it has not been assigned to a team as the ticket is closed and no work is expected on it anymore.
+## Available Workflows
+
+### 1. Add to Project Workflow (`org-add-to-project.yml`)
+
+Automatically adds new issues and pull requests to the podaac organization project with a default status of "needs:triage".
 
 
 
@@ -25,7 +33,7 @@ This repository provides automation scripts to help deploy the workflow across a
 1. **Find your project number:**
    - Go to your project URL: `https://github.com/orgs/podaac/projects/X`
    - The number `X` in the URL is your project number
-   - Update line 20 in `.github/workflows/add-to-project.yml` with this number
+   - Update line 24 in `.github/workflows/org-add-to-project.yml` with this number
 
 2. **Create a Personal Access Token (PAT):**
    - Go to https://github.com/settings/tokens/new
@@ -59,14 +67,11 @@ This repository provides automation scripts to help deploy the workflow across a
 
    **Option A: Automated deployment (Recommended)**
 
-   Use the provided scripts to deploy to all repositories:
+   Use the generalized deployment script to deploy to all repositories:
 
    ```bash
-   # Deploy via Pull Requests (safer, allows review)
-   ./deploy-workflow.sh
-
-   # OR deploy directly to main branch (faster, but no review)
-   ./deploy-workflow-direct.sh
+   # Deploy directly to main branch (faster, but no review)
+   ./deploy-workflow-direct.sh org-add-to-project.yml "Add automatic project assignment workflow"
    ```
 
    Prerequisites:
@@ -79,8 +84,8 @@ This repository provides automation scripts to help deploy the workflow across a
    ```bash
    cd /path/to/your/repo
    mkdir -p .github/workflows
-   cp /path/to/this/repo/.github/workflows/add-to-project.yml .github/workflows/
-   git add .github/workflows/add-to-project.yml
+   cp /path/to/this/repo/.github/workflows/org-add-to-project.yml .github/workflows/
+   git add .github/workflows/org-add-to-project.yml
    git commit -m "Add automatic project assignment workflow"
    git push
    ```
@@ -116,9 +121,29 @@ The action triage-report-to-slack sends a message to the #podaac-management chan
 
 The Slack connection is configured using a webhook URL stored in the `SLACK_WEBHOOK_URL` secret. You can get the webhoob URL by creating an incoming webhook in your Slack workspace for a slack application, currently called "podaac issues needs triage".
 
-## Team Assignment Workflow
+### 2. Close PR Status Workflow (`org-close-pr-status.yml`)
 
-This workflow automates the process of assigning issues to specific teams when they are labeled with a `team:<team_name>` label (e.g., `team:tva`, `team:forge`, etc.).
+Automatically updates the status of pull requests to "closed" in the podaac project when they are closed or merged.
+
+#### How it works
+
+- **Trigger:** When a pull request is closed (merged or closed without merging)
+- **Actions:**
+  1. Finds the PR in the podaac project (project #75)
+  2. Updates the status field to "closed"
+  3. Logs whether the PR was merged or closed without merging
+
+#### Deployment
+
+```bash
+./deploy-workflow-direct.sh org-close-pr-status.yml "Add automatic PR closure status update"
+```
+
+**Note:** Ensure your project has a "closed" status option in the Status field.
+
+### 3. Team Assignment Workflow (`org-team-assignment.yml`)
+
+Automates the process of assigning issues to specific teams when they are labeled with a `team:<team_name>` label (e.g., `team:tva`, `team:forge`, etc.).
 
 ### How it works
 
@@ -149,10 +174,9 @@ This workflow automates the process of assigning issues to specific teams when t
 
 4. **Deploy the workflow:**
 
-    ```
-    chmod +x deploy-team-assignment-direct.sh
-    ./deploy-team-assignment-direct.sh
-     ```
+   ```bash
+   ./deploy-workflow-direct.sh org-team-assignment.yml "Add team assignment automation"
+   ```
 
 ### Usage
 
@@ -169,7 +193,7 @@ This workflow automates the process of assigning issues to specific teams when t
 - **Issue not added to team project:** Check that a project exists with the exact team name (case-insensitive)
 - **Workflow not triggering:** Ensure the label matches the pattern `team:<team_name>` exactly
 
-### Example Flow
+#### Example Flow
 
 1. Issue #123 is created → automatically added to podaac project with status "needs:triage"
 2. Team lead adds label `team:tva` to issue #123
@@ -178,3 +202,60 @@ This workflow automates the process of assigning issues to specific teams when t
    - ✅ Finds project named "tva"
    - ✅ Adds issue #123 to "tva" project
    - ✅ Team project automation handles status assignment
+
+## Deployment Scripts
+
+This repository includes automated scripts to deploy and manage workflows across all organization repositories.
+
+### `deploy-workflow-direct.sh`
+
+Deploys or updates a workflow to all non-archived repositories in the organization.
+
+**Usage:**
+```bash
+./deploy-workflow-direct.sh <workflow-filename> [commit-message]
+```
+
+**Examples:**
+```bash
+# Deploy the add-to-project workflow
+./deploy-workflow-direct.sh org-add-to-project.yml
+
+# Deploy with custom commit message
+./deploy-workflow-direct.sh org-team-assignment.yml "Update team assignment automation"
+```
+
+**Features:**
+- Creates new workflows or updates existing ones
+- Shows progress for each repository
+- Provides summary of successes, updates, and failures
+- Validates workflow file exists before deploying
+- Lists available workflows if no filename provided
+
+### `remove-workflow-direct.sh`
+
+Removes a workflow from all repositories in the organization.
+
+**Usage:**
+```bash
+./remove-workflow-direct.sh <workflow-filename> [commit-message]
+```
+
+**Examples:**
+```bash
+# Remove a deprecated workflow
+./remove-workflow-direct.sh org-old-workflow.yml
+
+# Remove with custom commit message
+./remove-workflow-direct.sh org-deprecated.yml "Remove deprecated automation"
+```
+
+**Safety Features:**
+- Requires typing "DELETE" to confirm (not just Enter)
+- Only removes workflows that exist
+- Shows which repos were skipped vs. successfully removed
+
+**Prerequisites for both scripts:**
+- GitHub CLI (`gh`) must be installed and authenticated
+- You need write access to all repositories in the organization
+- The scripts operate on the `podaac` organization (update `ORG` variable if different)
