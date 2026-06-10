@@ -209,8 +209,13 @@ jobs:
                 type: "divider"
               });
 
+              // Slack hard limit is 50 blocks; cap displayed items to stay under it
+              const MAX_ITEMS = 40;
+              const displayedItems = formattedItems.slice(0, MAX_ITEMS);
+              const hiddenCount = formattedItems.length - displayedItems.length;
+
               // Add each item
-              formattedItems.forEach(item => {
+              displayedItems.forEach(item => {
                 const emoji = item.type === 'Issue' ? '🐛' : '🔀';
                 blocks.push({
                   type: "section",
@@ -221,6 +226,16 @@ jobs:
                   }
                 });
               });
+
+              if (hiddenCount > 0) {
+                blocks.push({
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `_...and ${hiddenCount} more item${hiddenCount !== 1 ? 's' : ''}. <https://github.com/orgs/podaac/projects/${projectNumber}|View all on the project board>._`
+                  }
+                });
+              }
 
               // Add summary footer
               const issueCount = formattedItems.filter(i => i.type === 'Issue').length;
