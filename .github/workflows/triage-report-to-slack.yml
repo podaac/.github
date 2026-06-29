@@ -135,6 +135,32 @@ jobs:
               cursor = result.organization.projectV2.items.pageInfo.endCursor;
             }
 
+            // Fetch TVA team members and filter out their PRs
+            const tvaTeamQuery = `
+              query($org: String!) {
+                organization(login: $org) {
+                  team(slug: "tva") {
+                    members(first: 100) {
+                      nodes {
+                        login
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const tvaTeamResult = await github.graphql(tvaTeamQuery, { org: org });
+            const tvaMembers = new Set(
+              tvaTeamResult.organization.team.members.nodes.map(m => m.login)
+            );
+
+            triageItems = triageItems.filter(item => {
+              const isPR = item.content.__typename === 'PullRequest';
+              const author = item.content.author?.login;
+              return !(isPR && tvaMembers.has(author));
+            });
+
             // Format items for Slack
             const formattedItems = triageItems.map(item => {
               const content = item.content;
