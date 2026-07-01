@@ -72,6 +72,7 @@ jobs:
                           }
                         }
                         content {
+                          __typename
                           ... on Issue {
                             number
                             title
@@ -123,6 +124,8 @@ jobs:
               });
 
               const items = result.organization.projectV2.items.nodes;
+
+              console.log(`Statuses in this page: ${items.map(item => item.fieldValueByName?.name).join(', ')}`);
 
               // Filter items by status immediately
               const filteredBatch = items.filter(item => {
