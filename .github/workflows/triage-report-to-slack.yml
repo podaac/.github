@@ -155,10 +155,14 @@ jobs:
               tvaTeamResult.organization.team.members.nodes.map(m => m.login)
             );
 
+            console.log(`TVA team members (${tvaMembers.size}): ${[...tvaMembers].join(', ')}`);
+
             triageItems = triageItems.filter(item => {
               const isPR = item.content.__typename === 'PullRequest';
               const author = item.content.author?.login;
-              return !(isPR && tvaMembers.has(author));
+              const filtered = isPR && tvaMembers.has(author);
+              if (isPR) console.log(`PR author: ${author} — filtered out: ${filtered}`);
+              return !filtered;
             });
 
             // Format items for Slack
