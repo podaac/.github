@@ -157,6 +157,7 @@ jobs:
             const tvaMembers = new Set(
               tvaTeamResult.organization.team.members.nodes.map(m => m.login)
             );
+            tvaMembers.add("podaac-cicd");
 
             console.log(`TVA team members (${tvaMembers.size}): ${[...tvaMembers].join(', ')}`);
 
