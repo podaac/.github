@@ -72,6 +72,7 @@ jobs:
                           }
                         }
                         content {
+                          __typename
                           ... on Issue {
                             number
                             title
@@ -124,6 +125,8 @@ jobs:
 
               const items = result.organization.projectV2.items.nodes;
 
+              console.log(`Statuses in this page: ${items.map(item => item.fieldValueByName?.name).join(', ')}`);
+
               // Filter items by status immediately
               const filteredBatch = items.filter(item => {
                 return item.fieldValueByName?.name === statusFilter && item.content;
@@ -134,6 +137,37 @@ jobs:
               hasNextPage = result.organization.projectV2.items.pageInfo.hasNextPage;
               cursor = result.organization.projectV2.items.pageInfo.endCursor;
             }
+
+            // Fetch TVA team members and filter out their PRs
+            const tvaTeamQuery = `
+              query($org: String!) {
+                organization(login: $org) {
+                  team(slug: "tva") {
+                    members(first: 100) {
+                      nodes {
+                        login
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const tvaTeamResult = await github.graphql(tvaTeamQuery, { org: org });
+            const tvaMembers = new Set(
+              tvaTeamResult.organization.team.members.nodes.map(m => m.login)
+            );
+            tvaMembers.add("podaac-cicd");
+
+            console.log(`TVA team members (${tvaMembers.size}): ${[...tvaMembers].join(', ')}`);
+
+            triageItems = triageItems.filter(item => {
+              const isPR = item.content.__typename === 'PullRequest';
+              const author = item.content.author?.login;
+              const filtered = isPR && tvaMembers.has(author);
+              if (isPR) console.log(`PR author: ${author} — filtered out: ${filtered}`);
+              return !filtered;
+            });
 
             // Format items for Slack
             const formattedItems = triageItems.map(item => {
