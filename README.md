@@ -114,7 +114,7 @@ All the new tickets are now automatically added to the podaac github project wit
 
 The action triage-report-to-slack sends a message to the #podaac-management channel in Slack whenever a new issue or pull request is created with the "needs:triage" status. This ensures that the team is immediately notified of new items that require attention and that no issue falls into cracks.
 
-The Slack connection is configured using a webhook URL stored in the `SLACK_WEBHOOK_URL` secret. You can get the webhoob URL by creating an incoming webhook in your Slack workspace for a slack application, currently called "podaac issues needs triage".
+The Slack connection is configured using a webhook URL stored in the `SLACK_WEBHOOK_URL` secret. You can get the webhoob URL by creating an incoming webhook in your Slack workspace for a slack application, currently called "podaac issues needs triage". Manage the app on slack from URL https://api.slack.com/apps
 
 ## Team Assignment Workflow
 
